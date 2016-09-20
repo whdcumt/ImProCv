@@ -1,0 +1,4 @@
+LIBRARY BoxBlur
+EXPORTS 
+BoxBlur  @1
+BoxBlurSSE @2
