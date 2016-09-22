@@ -5,16 +5,14 @@
 #include "stdafx.h"
 #include "stdlib.h"
 #include <malloc.h>
-#include<opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
+#include<string.h>
 /// <summary>
 /// 分配内存函数,以32字节对齐。
 /// </summary>
 /// <param name="Size">需要使用的内存大小（以字节为单位）。</param>
 /// <param name="ZeroMemory">内存数据是否进行清零处理 。</param>
 /// <returns>返回所分配内存的指针，失败则返回NULL。</returns>
-void *AllocMemory(unsigned int Size, bool ZeroMemory)	//	https://technet.microsoft.com/zh-cn/library/8z34s9c6
+extern "C" void *AllocMemory(unsigned int Size, bool ZeroMemory)	//	https://technet.microsoft.com/zh-cn/library/8z34s9c6
 {
 	void *Ptr = _aligned_malloc(Size, 32);				//	考虑SSE,AVX等高级函数的需求，分配起始地址使用32字节对齐。其实_mm_malloc就是这个函数
 	if (Ptr != NULL && ZeroMemory == true)
@@ -25,7 +23,7 @@ void *AllocMemory(unsigned int Size, bool ZeroMemory)	//	https://technet.microso
 /// 释放内存。
 /// </summary>
 /// <param name="Ptr">内存数据的地址。</param>
-void FreeMemory(void *Ptr)
+extern "C" void FreeMemory(void *Ptr)
 {
 	if (Ptr != NULL) _aligned_free(Ptr);		//	_mm_free就是该函数
 }
@@ -37,7 +35,7 @@ void FreeMemory(void *Ptr)
 /// <param name="Right">右侧需要扩展的长度。</param>
 /// <param name="Edge">边缘扩展的模式。</param>
 /// <returns>返回扩展后对应的坐标。</returns>
-int *GetExpandPos(int Length, int Left, int Right, int Edge)
+extern "C" int *GetExpandPos(int Length, int Left, int Right, int Edge)
 {
 	if (Left < 0 || Length < 0 || Right < 0) return NULL;
 	int *Pos = (int *)AllocMemory((Left + Length + Right) * sizeof(int), false);
@@ -85,24 +83,24 @@ int *GetExpandPos(int Length, int Left, int Right, int Edge)
 /// <remarks> 1: 能处理8位灰度和24位图像。</remarks>
 /// <remarks> 2: Src和Dest可以相同，在相同时速度会稍慢。</remarks>
 /// <remarks> 3: 开发者laviewpbt ,QQ - 33184777。</remarks>
-void  BoxBlur(unsigned char *Src, unsigned char *Dest, int Width,int Height,int Channel,unsigned char Radius, int Edge)
+extern "C" void  BoxBlur(double *Src, double *Dest, int Width,int Height,int Channel,unsigned char Radius, int Edge)
 {
 	int X, Y, Z, Index;  //X,Y,Z自变量,Width图像宽度，Height为图形高度，Channel图像的通道数
-	int Value, ValueB, ValueG, ValueR;     //每个通道的灰度值
+	double Value, ValueB, ValueG, ValueR;     //每个通道的灰度值
 	int *RowPos, *ColPos;
-	int  *ColSum, *Diff; 
+	double  *ColSum, *Diff; 
 	//Width = Src->Width, Height = Src->Height, Channel = Src->Channel;
 	int Size = 2 * Radius + 1,  Amount = Size * Size, HalfAmount = Amount / 2;
 	RowPos = GetExpandPos(Width, Radius, Radius, Edge); //扩展行之后的数值
 	ColPos = GetExpandPos(Height, Radius, Radius, Edge);//扩展列之后的数值
-	ColSum = (int *)AllocMemory(Width * Channel * sizeof(int), true); //开辟行内存地址
-	Diff   = (int *)AllocMemory((Width - 1) * Channel * sizeof(int), true);//开辟行内存地址-1
-	unsigned char *RowData = (unsigned char *)AllocMemory((Width + 2 * Radius) * Channel, true);//开辟行内存地址
-	unsigned char *Data=(unsigned char *)AllocMemory(Height *Width * Channel*sizeof(int), false);//	用了True在大循环里换慢很多
+	ColSum = (double *)AllocMemory(Width * Channel * sizeof(double), true); //开辟行内存地址
+	Diff   = (double *)AllocMemory((Width - 1) * Channel * sizeof(double), true);//开辟行内存地址-1
+	double *RowData = (double*)AllocMemory((Width + 2 * Radius) * Channel, true);//开辟行内存地址
+	double *Data=(double *)AllocMemory(Height *Width * Channel*sizeof(double), false);//	用了True在大循环里换慢很多
 	for (Y = 0; Y < Height; Y++)					//	水平方向的耗时比垂直方向上的大
 	{
-		unsigned char *LinePS = Src + Y *  Width*Channel*sizeof(unsigned char);
-		int *LinePD= (int*)(Data + Y * Width*Channel*sizeof(int));
+		double *LinePS = Src + Y *  Width*Channel*sizeof(double);
+		double *LinePD= (double*)(Data + Y * Width*Channel*sizeof(double));
 
 		//	拷贝一行数据及边缘部分部分到临时的缓冲区中
 		if (Channel == 1)
@@ -132,8 +130,8 @@ void  BoxBlur(unsigned char *Src, unsigned char *Dest, int Width,int Height,int 
 			}
 		}
 
-		unsigned char *AddPos = RowData + Size * Channel;
-		unsigned char *SubPos = RowData;
+		double *AddPos = RowData + Size * Channel;
+		double *SubPos = RowData;
 					
 		for(X = 0; X < (Width - 1) * Channel; X++)
 			Diff[X] = AddPos[X] - SubPos[X];
@@ -172,15 +170,15 @@ void  BoxBlur(unsigned char *Src, unsigned char *Dest, int Width,int Height,int 
 		
 	for (Y = 0; Y < Size - 1; Y++)			//	注意没有最后一项哦						//	这里的耗时只占整个的15%左右
 	{
-		int *LinePS = (int*)(Data + ColPos[Y] * Width*Channel*sizeof(int));
+		double *LinePS = (double*)(Data + ColPos[Y] * Width*Channel*sizeof(double));
 		for(X = 0; X < Width * Channel; X++)	ColSum[X] += LinePS[X];
 	}
 
 	for (Y = 0; Y < Height; Y++)
 	{
-		unsigned char* LinePD	= Dest + Y * Width*Channel*sizeof(unsigned char);	
-		int *AddPos	= (int*)(Data + ColPos[Y + Size - 1] * Width*Channel*sizeof(int));
-		int *SubPos = (int*)(Data + ColPos[Y] * Width*Channel*sizeof(int));
+		double* LinePD	= Dest + Y * Width*Channel*sizeof(double);	
+		double *AddPos	= (double*)(Data + ColPos[Y + Size - 1] * Width*Channel*sizeof(double));
+		double *SubPos = (double*)(Data + ColPos[Y] * Width*Channel*sizeof(double));
 
 		for(X = 0; X < Width * Channel; X++)
 		{
@@ -196,36 +194,7 @@ void  BoxBlur(unsigned char *Src, unsigned char *Dest, int Width,int Height,int 
 	FreeMemory(ColSum);
 	FreeMemory(RowData);
 }
-
-
 int main(int argc, char* argv[])
 {
-	const char*imagename="E:\\InputName.bmp";  //此处需要根据要显示图片文件的实际文件位置更改
-	//从文件中读入图像
-	Mat img=imread(imagename);
-	Mat img1=imread(imagename);
-	Mat Src,Dest;
-	cvtColor(img,Src,CV_BGR2GRAY);
-	cvtColor(img1,Dest,CV_BGR2GRAY);
-	//imshow("img",img);
-	//imshow("img1",img1);
-	 imshow("Src",Src);
-	//imshow("Dest",Dest);
-	//Mat dst;
-	//如果读取图像失败
-	//if(img.empty())
-	//{
-	//	fprintf(stderr,"Can not load image%s\n",imagename);
-	//	return -1;
-	//}
-	//Sobel(src,dst,src.depth(),1,1);
-	//显示图像
-	//imshow("Sobel",dst); 
-	//此函数等待按键，按键盘任意键返回
-	BoxBlur(Src.data,Dest.data,Src.cols,Src.rows,1,3,1); /*(1)删除__stdcall(2)TMatrix修改为unsigned char(2)增加Width,Height,Channels */
-	//BoxBlur(img.data,img1.data,img.cols,img.rows,3,3,1); /*(1)删除__stdcall(2)TMatrix修改为unsigned char(2)增加Width,Height,Channels */
-	imshow("均值模糊",Dest);
-	waitKey();
-	while(1);
 	return 0;
 }

@@ -1,0 +1,21 @@
+﻿生成启动时间为 2014-06-28 9:26:20。
+     1>项目“D:\桌面\OpenCV学习笔记\OpenCV学习笔记\OpenCV笔记之四：播放AVI视频，逐帧保存成图片\camera\camera.vcxproj”在节点 2 上(build 个目标)。
+     1>C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\Microsoft.CppBuild.targets(296,5): warning MSB8003: 未能在注册表中找到 VCInstallDir 变量。TargetFrameworkVersion 或 PlatformToolset 可能设置为无效的版本号。
+     1>InitializeBuildStatus:
+         正在创建“Debug\camera.unsuccessfulbuild”，因为已指定“AlwaysCreate”。
+       ClCompile:
+         所有输出均为最新。
+       ManifestResourceCompile:
+         所有输出均为最新。
+       Link:
+         所有输出均为最新。
+       Manifest:
+         所有输出均为最新。
+       FinalizeBuildStatus:
+         正在删除文件“Debug\camera.unsuccessfulbuild”。
+         正在对“Debug\camera.lastbuildstate”执行 Touch 任务。
+     1>已完成生成项目“D:\桌面\OpenCV学习笔记\OpenCV学习笔记\OpenCV笔记之四：播放AVI视频，逐帧保存成图片\camera\camera.vcxproj”(build 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:00.16
